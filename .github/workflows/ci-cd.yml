@@ -87,8 +87,9 @@ jobs:
         file: ./deployment/docker/Dockerfile.backend
         push: true
         tags: |
-          ${{ env.REGISTRY }}/kpbtravels/api:latest
-          ${{ env.REGISTRY }}/kpbtravels/api:${{ github.sha }}
+          env.REGISTRY/{{ github.repository_owner }}/api:latest 
+          env.REGISTRY/{{ github.repository_owner }}/api:${{ github.sha }}
+
 
     - name: Build and push frontend image
       uses: docker/build-push-action@v4
@@ -97,8 +98,8 @@ jobs:
         file: ./deployment/docker/Dockerfile.frontend
         push: true
         tags: |
-          ${{ env.REGISTRY }}/kpbtravels/frontend:latest
-          ${{ env.REGISTRY }}/kpbtravels/frontend:${{ github.sha }}
+          env.REGISTRY/{{ github.repository_owner }}/frontend:latest
+          env.REGISTRY/{{ github.repository_owner }}/frontend:${{ github.sha }}
 
   deploy:
     runs-on: ubuntu-latest

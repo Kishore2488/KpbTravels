@@ -171,7 +171,7 @@ jobs:
         run: kubectl apply -f deployment/kubernetes/kpb-deployment.yml
 
       - name: Wait for Backend Rollout
-        run: kubectl rollout status deployment/kpb-api -n kpb-travels --timeout=300s
+        run: kubectl rollout status deployment/kpb-api -n kpb-travels --timeout=3000s
 
       - name: Wait for Frontend Rollout
-        run: kubectl rollout status deployment/kpb-frontend -n kpb-travels --timeout=300s
+        run: kubectl rollout status deployment/kpb-frontend -n kpb-travels --timeout=3000s

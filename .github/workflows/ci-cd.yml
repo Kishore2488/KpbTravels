@@ -153,8 +153,8 @@ jobs:
       - name: Update kubeconfig
         run: |
           aws eks update-kubeconfig \
-            --region us-east-1 \
-            --name YOUR_CLUSTER_NAME
+            --region ${{ secrets.AWS_REGION }} \
+            --name ${{ secrets.EKS_CLUSTER_NAME }}
       
       - name: Verify cluster
         run: kubectl get nodes

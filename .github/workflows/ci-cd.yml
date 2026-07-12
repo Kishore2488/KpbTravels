@@ -158,6 +158,8 @@ jobs:
       
       - name: Verify cluster
         run: kubectl get nodes
+      - name: Create Namespace
+        run: kubectl apply -f deployment/kubernetes/namespace.yml
 
       - name: Deploy MongoDB
         run: kubectl apply -f deployment/kubernetes/mongodb-statefulset.yml

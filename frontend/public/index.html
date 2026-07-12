@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KPB Travels - Premium Travel Booking Platform</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="logo">
+                <i class="fas fa-bus"></i>
+                <span>KPB Travels</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#search">Book Journey</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#contact">Contact</a></li>
+                <li id="authLinks">
+                    <button class="btn-login" onclick="openLoginModal()">Login</button>
+                    <button class="btn-signup" onclick="openSignupModal()">Sign Up</button>
+                </li>
+                <li id="userMenu" class="hidden">
+                    <div class="user-dropdown">
+                        <button class="user-btn"><i class="fas fa-user-circle"></i> Account</button>
+                        <div class="dropdown-menu">
+                            <a href="#profile" onclick="viewProfile()">My Profile</a>
+                            <a href="#bookings" onclick="viewBookings()">My Bookings</a>
+                            <a href="#" onclick="logout()">Logout</a>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="hero-content">
+            <h1>Travel Smarter with KPB Travels</h1>
+            <p>Book your journey with comfort, safety, and affordability</p>
+        </div>
+    </section>
+
+    <!-- Search Section -->
+    <section id="search" class="search-section">
+        <div class="container">
+            <div class="search-card">
+                <h2>Find Your Journey</h2>
+                <form id="searchForm" class="search-form">
+                    <div class="form-group">
+                        <label for="source">From</label>
+                        <input type="text" id="source" placeholder="Departure City" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="destination">To</label>
+                        <input type="text" id="destination" placeholder="Arrival City" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="date">Date</label>
+                        <input type="date" id="date" required>
+                    </div>
+                    <button type="submit" class="btn-primary">Search Journeys</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Journey Results -->
+    <section id="results" class="results-section">
+        <div class="container">
+            <h2>Available Journeys</h2>
+            <div id="journeyResults" class="journey-grid">
+                <!-- Results will be populated here -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="about" class="features-section">
+        <div class="container">
+            <h2>Why Choose KPB Travels?</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <i class="fas fa-shield-alt"></i>
+                    <h3>Safety First</h3>
+                    <p>All vehicles are regularly maintained and drivers are trained professionals</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-dollar-sign"></i>
+                    <h3>Best Prices</h3>
+                    <p>Competitive pricing with flexible payment options and discounts</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-wifi"></i>
+                    <h3>Comfort</h3>
+                    <p>Modern vehicles with WiFi, USB charging, and comfortable seating</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-headset"></i>
+                    <h3>24/7 Support</h3>
+                    <p>Dedicated customer support team available round the clock</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="contact-section">
+        <div class="container">
+            <h2>Contact Us</h2>
+            <div class="contact-grid">
+                <div class="contact-info">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <h3>Address</h3>
+                    <p>KPB Travels Head Office<br>New Delhi, India</p>
+                </div>
+                <div class="contact-info">
+                    <i class="fas fa-phone"></i>
+                    <h3>Phone</h3>
+                    <p>+91 1234567890<br>Support: 24/7</p>
+                </div>
+                <div class="contact-info">
+                    <i class="fas fa-envelope"></i>
+                    <h3>Email</h3>
+                    <p>info@kpbtravels.com<br>support@kpbtravels.com</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 KPB Travels. All rights reserved.</p>
+            <ul class="footer-links">
+                <li><a href="#privacy">Privacy Policy</a></li>
+                <li><a href="#terms">Terms & Conditions</a></li>
+                <li><a href="#refund">Refund Policy</a></li>
+            </ul>
+        </div>
+    </footer>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeLoginModal()">&times;</span>
+            <h2>Login to KPB Travels</h2>
+            <form id="loginForm" class="auth-form">
+                <div class="form-group">
+                    <label for="loginEmail">Email</label>
+                    <input type="email" id="loginEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" required>
+                </div>
+                <button type="submit" class="btn-primary">Login</button>
+                <p class="auth-toggle">Don't have an account? <a href="#" onclick="toggleAuthModals()">Sign up</a></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Signup Modal -->
+    <div id="signupModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeSignupModal()">&times;</span>
+            <h2>Create Your Account</h2>
+            <form id="signupForm" class="auth-form">
+                <div class="form-group">
+                    <label for="signupName">Full Name</label>
+                    <input type="text" id="signupName" required>
+                </div>
+                <div class="form-group">
+                    <label for="signupEmail">Email</label>
+                    <input type="email" id="signupEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="signupPhone">Phone</label>
+                    <input type="tel" id="signupPhone">
+                </div>
+                <div class="form-group">
+                    <label for="signupPassword">Password</label>
+                    <input type="password" id="signupPassword" required>
+                </div>
+                <div class="form-group">
+                    <label for="signupUserType">Account Type</label>
+                    <select id="signupUserType">
+                        <option value="customer">Customer</option>
+                        <option value="driver">Driver</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-primary">Create Account</button>
+                <p class="auth-toggle">Already have an account? <a href="#" onclick="toggleAuthModals()">Login</a></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Booking Modal -->
+    <div id="bookingModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeBookingModal()">&times;</span>
+            <h2>Complete Your Booking</h2>
+            <form id="bookingForm" class="booking-form">
+                <div id="bookingDetails"></div>
+                <div class="form-group">
+                    <label for="seats">Number of Seats</label>
+                    <input type="number" id="seats" min="1" required>
+                </div>
+                <div class="form-group">
+                    <label for="paymentMethod">Payment Method</label>
+                    <select id="paymentMethod" required>
+                        <option value="">Select Payment Method</option>
+                        <option value="credit_card">Credit Card</option>
+                        <option value="debit_card">Debit Card</option>
+                        <option value="upi">UPI</option>
+                        <option value="wallet">Wallet</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="pickupPoint">Pickup Point</label>
+                    <input type="text" id="pickupPoint" required>
+                </div>
+                <div class="form-group">
+                    <label for="specialRequests">Special Requests (Optional)</label>
+                    <textarea id="specialRequests" rows="3"></textarea>
+                </div>
+                <div class="price-summary">
+                    <p>Total: <strong id="totalPrice">₹0</strong></p>
+                </div>
+                <button type="submit" class="btn-primary">Confirm Booking</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>

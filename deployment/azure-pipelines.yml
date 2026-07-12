@@ -1,0 +1,127 @@
+trigger:
+  - main
+  - feature
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  dockerRegistryServiceConnection: 'kpbtravels-acr'
+  imageRepository: 'kpbtravels'
+  containerRegistry: 'kpbtravels.azurecr.io'
+  dockerfileBackend: '$(Build.SourcesDirectory)/deployment/docker/Dockerfile.backend'
+  dockerfileFrontend: '$(Build.SourcesDirectory)/deployment/docker/Dockerfile.frontend'
+  tag: '$(Build.BuildId)'
+
+stages:
+- stage: Build
+  displayName: Build and Test
+  jobs:
+  - job: BuildBackend
+    displayName: Build Backend
+    steps:
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '18.x'
+      displayName: 'Install Node.js'
+
+    - script: |
+        cd backend
+        npm install
+        npm run lint
+        npm test
+      displayName: 'Test Backend'
+
+  - job: BuildFrontend
+    displayName: Build Frontend
+    steps:
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '18.x'
+      displayName: 'Install Node.js'
+
+    - script: |
+        cd frontend
+        npm install
+      displayName: 'Build Frontend'
+
+  - job: BuildDockerImages
+    displayName: Build Docker Images
+    dependsOn: [BuildBackend, BuildFrontend]
+    condition: succeeded()
+    steps:
+    - task: Docker@2
+      displayName: Build Backend Image
+      inputs:
+        command: build
+        Dockerfile: $(dockerfileBackend)
+        repository: $(imageRepository)/api
+        tags: |
+          latest
+          $(tag)
+
+    - task: Docker@2
+      displayName: Build Frontend Image
+      inputs:
+        command: build
+        Dockerfile: $(dockerfileFrontend)
+        repository: $(imageRepository)/frontend
+        tags: |
+          latest
+          $(tag)
+
+- stage: Push
+  displayName: Push to Registry
+  dependsOn: Build
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  jobs:
+  - job: PushImages
+    displayName: Push Docker Images
+    steps:
+    - task: Docker@2
+      displayName: Push Backend Image
+      inputs:
+        command: push
+        repository: $(imageRepository)/api
+        tags: |
+          latest
+          $(tag)
+
+    - task: Docker@2
+      displayName: Push Frontend Image
+      inputs:
+        command: push
+        repository: $(imageRepository)/frontend
+        tags: |
+          latest
+          $(tag)
+
+- stage: Deploy
+  displayName: Deploy to Environment
+  dependsOn: Push
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  jobs:
+  - deployment: DeployToKubernetes
+    displayName: Deploy to Kubernetes
+    environment: 'production'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: KubernetesManifest@0
+            displayName: Deploy to Kubernetes
+            inputs:
+              action: 'deploy'
+              kubernetesServiceConnection: 'kpb-travels-k8s'
+              namespace: 'kpb-travels'
+              manifests: |
+                $(Pipeline.Workspace)/manifests/kpb-deployment.yml
+                $(Pipeline.Workspace)/manifests/network-policy.yml
+
+          - task: KubernetesManifest@0
+            displayName: Verify Deployment
+            inputs:
+              action: 'get'
+              kubernetesServiceConnection: 'kpb-travels-k8s'
+              namespace: 'kpb-travels'
+              cmd: 'get pods'

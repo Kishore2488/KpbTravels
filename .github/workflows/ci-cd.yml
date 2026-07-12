@@ -28,7 +28,13 @@ jobs:
     - name: Install backend dependencies
       run: |
         cd backend
-        npm ci
+        if [ -f package-lock.json ] || [ -f npm-shrinkwrap.json ]; then
+          echo "Lockfile found — running npm ci"
+          npm ci
+        else
+          echo "package-lock.json not found — falling back to npm install"
+          npm install
+        fi
 
     - name: Lint backend
       run: |
@@ -45,7 +51,13 @@ jobs:
     - name: Install frontend dependencies
       run: |
         cd frontend
-        npm ci
+        if [ -f package-lock.json ] || [ -f npm-shrinkwrap.json ]; then
+          echo "Lockfile found — running npm ci"
+          npm ci
+        else
+          echo "package-lock.json not found — falling back to npm install"
+          npm install
+        fi
 
   build:
     runs-on: ubuntu-latest

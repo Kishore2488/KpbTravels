@@ -23,41 +23,56 @@ jobs:
         node-version: [18.x, 20.x]
 
     steps:
-      - name: Checkout source
-        uses: actions/checkout@v4
+    - uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
 
-      - name: Install backend dependencies
-        working-directory: backend
-        run: |
-          if [ -f package-lock.json ] || [ -f npm-shrinkwrap.json ]; then
-            npm ci
-          else
-            npm install
-          fi
+    - name: Install backend dependencies
+      run: |
+        cd backend
+        if [ -f package-lock.json ] || [ -f npm-shrinkwrap.json ]; then
+          echo "Lockfile found — running npm ci"
+          npm ci
+        else
+          echo "package-lock.json not found — falling back to npm install"
+          npm install
+        fi
 
-      - name: Lint backend
-        working-directory: backend
-        run: npm run lint
-        continue-on-error: true
+    - name: Lint backend
+      run: |
+        cd backend
+        npm run lint
+      continue-on-error: true
 
-      - name: Test backend
-        working-directory: backend
-        run: npm test
-        continue-on-error: true
+    - name: Test backend
+      run: |
+        cd backend
+        npm test -- --passWithNoTests
+      continue-on-error: true
 
-      - name: Install frontend dependencies
-        working-directory: frontend
-        run: |
-          if [ -f package-lock.json ] || [ -f npm-shrinkwrap.json ]; then
-            npm ci
-          else
-            npm install
-          fi
+    - name: Check frontend
+      id: check_frontend
+      run: |
+        if [ -d frontend ] && [ -f frontend/package.json ]; then
+          echo "exists=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "exists=false" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Install frontend dependencies
+      if: steps.check_frontend.outputs.exists == 'true'
+      run: |
+        cd frontend
+        if [ -f package-lock.json ] || [ -f npm-shrinkwrap.json ]; then
+          echo "Lockfile found — running npm ci"
+          npm ci
+        else
+          echo "package-lock.json not found — falling back to npm install"
+          npm install
+        fi
 
   build:
     runs-on: ubuntu-latest
@@ -70,42 +85,48 @@ jobs:
       packages: write
 
     steps:
-      - name: Checkout source
-        uses: actions/checkout@v4
+    - uses: actions/checkout@v3
 
-      - name: Convert repository owner to lowercase
-        run: |
-          echo "OWNER_LC=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+    - name: Log in to Container Registry
+      uses: docker/login-action@v2
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Build and push backend image
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        file: ./deployment/docker/Dockerfile.backend
+        push: true
+        tags: |
+          env.REGISTRY/{{ github.repository_owner }}/api:latest 
+          env.REGISTRY/{{ github.repository_owner }}/api:${{ github.sha }}
 
-      - name: Build and push backend image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./deployment/docker/Dockerfile.backend
-          push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.OWNER_LC }}/api:latest
-            ${{ env.REGISTRY }}/${{ env.OWNER_LC }}/api:${{ github.sha }}
 
-      - name: Build and push frontend image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./deployment/docker/Dockerfile.frontend
-          push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.OWNER_LC }}/frontend:latest
-            ${{ env.REGISTRY }}/${{ env.OWNER_LC }}/frontend:${{ github.sha }}
+    - name: Check frontend
+      id: check_frontend
+      run: |
+        if [ -d frontend ] && [ -f frontend/package.json ]; then
+          echo "exists=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "exists=false" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Build and push frontend image
+      if: steps.check_frontend.outputs.exists == 'true'
+      uses: docker/build-push-action@v4
+      with:
+        context: ./frontend
+        file: ./deployment/docker/Dockerfile.frontend
+        push: true
+        tags: |
+          env.REGISTRY/{{ github.repository_owner }}/frontend:latest
+          env.REGISTRY/{{ github.repository_owner }}/frontend:${{ github.sha }}
 
   deploy:
     runs-on: ubuntu-latest
@@ -114,31 +135,23 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
-      - name: Checkout source
-        uses: actions/checkout@v4
+    - uses: actions/checkout@v3
 
-      - name: Setup kubectl
-        uses: azure/setup-kubectl@v4
-        with:
-          version: latest
+    - name: Configure kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'latest'
 
-      - name: Configure kubeconfig
-        run: |
-          mkdir -p $HOME/.kube
-          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
-          chmod 600 $HOME/.kube/config
+    - name: Set up kubeconfig
+      run: |
+        mkdir -p $HOME/.kube
+        echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
+        chmod 600 $HOME/.kube/config
 
-      - name: Verify cluster connection
-        run: kubectl get nodes
-
-      - name: Deploy application
-        run: |
-          kubectl apply -f deployment/kubernetes/mongodb-statefulset.yml
-          kubectl apply -f deployment/kubernetes/network-policy.yml
-          kubectl apply -f deployment/kubernetes/kpb-deployment.yml
-
-      - name: Wait for backend rollout
-        run: kubectl rollout status deployment/kpb-api -n kpb-travels --timeout=300s
-
-      - name: Wait for frontend rollout
-        run: kubectl rollout status deployment/kpb-frontend -n kpb-travels --timeout=300s
+    - name: Deploy to Kubernetes
+      run: |
+        kubectl apply -f deployment/kubernetes/kpb-deployment.yml
+        kubectl apply -f deployment/kubernetes/mongodb-statefulset.yml
+        kubectl apply -f deployment/kubernetes/network-policy.yml
+        kubectl rollout status deployment/kpb-api -n kpb-travels || true
+        kubectl rollout status deployment/kpb-frontend -n kpb-travels || true

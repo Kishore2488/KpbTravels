@@ -143,26 +143,29 @@ jobs:
         with:
           version: latest
 
-      - name: Configure kubeconfig
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      
+      - name: Update kubeconfig
         run: |
-          mkdir -p $HOME/.kube
-          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
-          chmod 600 $HOME/.kube/config
-
-      - name: Verify Cluster
+          aws eks update-kubeconfig \
+            --region us-east-1 \
+            --name YOUR_CLUSTER_NAME
+      
+      - name: Verify cluster
         run: kubectl get nodes
 
-      - name: Deploy MongoDB
-        run: kubectl apply -f deployment/kubernetes/mongodb-statefulset.yml
-
-      - name: Deploy Network Policy
-        run: kubectl apply -f deployment/kubernetes/network-policy.yml
-
-      - name: Deploy Application
-        run: kubectl apply -f deployment/kubernetes/kpb-deployment.yml
-
-      - name: Wait for Backend Rollout
-        run: kubectl rollout status deployment/kpb-api -n kpb-travels --timeout=300s
-
-      - name: Wait for Frontend Rollout
-        run: kubectl rollout status deployment/kpb-frontend -n kpb-travels --timeout=300s
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+      
+      - name: Deploy using Helm
+        run: |
+          helm upgrade --install kpb-travels \
+            ./helm/kpb-travels \
+            --namespace kpb-travels \
+            --create-namespace \
+            --wait

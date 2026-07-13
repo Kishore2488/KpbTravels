@@ -1,10 +1,19 @@
 name: KPB Travels CI/CD Pipeline
+
 on:
   workflow_dispatch:
 
+env:
+  REGISTRY: ghcr.io
+
 jobs:
-  deploy:
+  test:
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [20.x]
+
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -13,7 +22,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          #cache: npm
 
       - name: Install Backend Dependencies
         working-directory: backend
@@ -56,8 +64,6 @@ jobs:
   build:
     needs: test
     runs-on: ubuntu-latest
-
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     permissions:
       contents: read
@@ -115,8 +121,6 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
 
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -131,16 +135,17 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-      
+          aws-region: ${{ secrets.AWS_REGION }}
+
       - name: Update kubeconfig
         run: |
           aws eks update-kubeconfig \
             --region ${{ secrets.AWS_REGION }} \
             --name ${{ secrets.EKS_CLUSTER_NAME }}
-      
+
       - name: Verify cluster
         run: kubectl get nodes
+
       - name: Create Namespace
         run: kubectl apply -f deployment/kubernetes/namespace.yml
 

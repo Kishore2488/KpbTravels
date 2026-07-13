@@ -1,15 +1,6 @@
 name: KPB Travels CI/CD Pipeline
-
 on:
-  push:
-    branches:
-      - main
-      - develop
-      - 'feature/*'
-  pull_request:
-    branches:
-      - main
-      - develop
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io

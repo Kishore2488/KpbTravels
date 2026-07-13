@@ -2,17 +2,9 @@ name: KPB Travels CI/CD Pipeline
 on:
   workflow_dispatch:
 
-env:
-  REGISTRY: ghcr.io
-
 jobs:
-  test:
+  deploy:
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: [18.x, 20.x]
-
     steps:
       - name: Checkout source
         uses: actions/checkout@v4

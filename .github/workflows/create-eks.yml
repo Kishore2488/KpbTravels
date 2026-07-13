@@ -1,0 +1,59 @@
+name: Create Amazon EKS Cluster
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  CLUSTER_NAME: KPB_cluster
+
+jobs:
+  create-cluster:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+
+      - name: Install eksctl
+        run: |
+          curl --silent --location \
+          "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_Linux_amd64.tar.gz" \
+          | tar xz
+          sudo mv eksctl /usr/local/bin
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Create EKS Cluster
+        run: |
+          eksctl create cluster \
+            --name $CLUSTER_NAME \
+            --region $AWS_REGION \
+            --managed \
+            --nodegroup-name linux-nodes \
+            --node-type t3.medium \
+            --nodes 2 \
+            --nodes-min 2 \
+            --nodes-max 3
+
+      - name: Configure kubeconfig
+        run: |
+          aws eks update-kubeconfig \
+            --name $CLUSTER_NAME \
+            --region $AWS_REGION
+
+      - name: Verify Cluster
+        run: |
+          kubectl get nodes

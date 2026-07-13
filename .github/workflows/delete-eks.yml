@@ -1,0 +1,41 @@
+name: Delete Amazon EKS Cluster
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  CLUSTER_NAME: KPB_cluster
+
+jobs:
+  delete-cluster:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+
+      - name: Install eksctl
+        run: |
+          curl --silent --location \
+          "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_Linux_amd64.tar.gz" \
+          | tar xz
+          sudo mv eksctl /usr/local/bin
+
+      - name: Delete Cluster
+        run: |
+          eksctl delete cluster \
+            --name $CLUSTER_NAME \
+            --region $AWS_REGION \
+            --wait

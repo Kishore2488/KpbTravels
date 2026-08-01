@@ -32,7 +32,7 @@ metadata:
   name: kpb-api
   namespace: kpb-travels
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: kpb-api
@@ -110,7 +110,7 @@ metadata:
   name: kpb-frontend
   namespace: kpb-travels
 spec:
-  replicas: 2
+  replicas: 11
   selector:
     matchLabels:
       app: kpb-frontend
@@ -159,8 +159,8 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: kpb-api
-  minReplicas: 3
-  maxReplicas: 10
+  minReplicas: 1
+  maxReplicas: 3
   metrics:
   - type: Resource
     resource:
